@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Video, Copy, ExternalLink, Trash2, Calendar, ClipboardCheck } from 'lucide-react';
+import { API_BASE_URL } from '../../config';
 import styles from './Dashboard.module.css';
 
 interface Room {
@@ -29,7 +30,7 @@ export default function Dashboard() {
 
   const fetchActiveRooms = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/rooms/active', {
+      const response = await fetch(`${API_BASE_URL}/api/rooms/active`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.status === 401) {
@@ -51,7 +52,7 @@ export default function Dashboard() {
 
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:8080/api/rooms', {
+      const response = await fetch(`${API_BASE_URL}/api/rooms`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -79,7 +80,7 @@ export default function Dashboard() {
     if (!confirm('Are you sure you want to end this meeting for everyone?')) return;
 
     try {
-      const response = await fetch(`http://localhost:8080/api/rooms/${roomId}/end`, {
+      const response = await fetch(`${API_BASE_URL}/api/rooms/${roomId}/end`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });

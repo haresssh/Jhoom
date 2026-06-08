@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { Room, RoomEvent } from 'livekit-client';
 import { Mic, X, MessageSquare, AlertCircle } from 'lucide-react';
+import { API_BASE_URL } from '../../config';
 import styles from './TranscriptionPanel.module.css';
 
 interface TranscriptionPanelProps {
@@ -113,7 +114,7 @@ export default function TranscriptionPanel({ room, roomId, onClose }: Transcript
 
     try {
       // 2. Fetch short-lived ephemeral Deepgram token from backend
-      const response = await fetch(`http://localhost:8080/api/transcription/token?roomId=${roomId}`);
+      const response = await fetch(`${API_BASE_URL}/api/transcription/token?roomId=${roomId}`);
       if (!response.ok) {
         throw new Error('Failed to fetch Deepgram token');
       }

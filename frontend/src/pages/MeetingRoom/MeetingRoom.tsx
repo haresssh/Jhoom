@@ -15,6 +15,7 @@ import {
   Copy, ClipboardCheck, MessageSquare, ShieldAlert
 } from 'lucide-react';
 import TranscriptionPanel from '../../components/TranscriptionPanel/TranscriptionPanel';
+import { API_BASE_URL } from '../../config';
 import styles from './MeetingRoom.module.css';
 
 interface RoomDetails {
@@ -57,7 +58,7 @@ export default function MeetingRoom() {
     if (hostToken) {
       try {
         setLoading(true);
-        const response = await fetch(`http://localhost:8080/api/rooms/${roomId}/join`, {
+        const response = await fetch(`${API_BASE_URL}/api/rooms/${roomId}/join`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -86,7 +87,7 @@ export default function MeetingRoom() {
   const fetchRoomDetailsWithToken = async (token: string, role: 'host' | 'guest') => {
     try {
       // Just check if room is still active
-      const response = await fetch(`http://localhost:8080/api/rooms/${roomId}/join`, {
+      const response = await fetch(`${API_BASE_URL}/api/rooms/${roomId}/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ displayName: 'Ping' }), // Dummy ping
@@ -118,7 +119,7 @@ export default function MeetingRoom() {
     setLoading(true);
 
     try {
-      const response = await fetch(`http://localhost:8080/api/rooms/${roomId}/join`, {
+      const response = await fetch(`${API_BASE_URL}/api/rooms/${roomId}/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ displayName: displayName.trim() }),
@@ -250,7 +251,7 @@ function RoomContent({ roomDetails, showTranscription, setShowTranscription, onC
     if (roomDetails.role === 'host' && hostToken) {
       if (confirm('Do you want to end this meeting for all participants?')) {
         try {
-          await fetch(`http://localhost:8080/api/rooms/${roomDetails.roomId}/end`, {
+          await fetch(`${API_BASE_URL}/api/rooms/${roomDetails.roomId}/end`, {
             method: 'POST',
             headers: { Authorization: `Bearer ${hostToken}` },
           });
