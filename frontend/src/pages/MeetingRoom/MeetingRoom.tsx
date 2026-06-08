@@ -6,7 +6,8 @@ import {
   GridLayout, 
   ParticipantTile,
   useLocalParticipant,
-  useTracks
+  useTracks,
+  useRoomContext
 } from '@livekit/components-react';
 import { Track } from 'livekit-client';
 import { 
@@ -238,6 +239,7 @@ function RoomContent({ roomDetails, showTranscription, setShowTranscription, onC
   const hostToken = localStorage.getItem('token');
 
   // LiveKit hooks
+  const room = useRoomContext();
   const { localParticipant, isMicrophoneEnabled, isCameraEnabled, isScreenShareEnabled } = useLocalParticipant();
   const tracks = useTracks([
     { source: Track.Source.Camera, withPlaceholder: true },
@@ -347,7 +349,7 @@ function RoomContent({ roomDetails, showTranscription, setShowTranscription, onC
       {/* Right Column: Sliding transcription sidebar */}
       {showTranscription && (
         <TranscriptionPanel 
-          room={localParticipant.room} 
+          room={room} 
           roomId={roomDetails.roomId}
           onClose={() => setShowTranscription(false)}
         />

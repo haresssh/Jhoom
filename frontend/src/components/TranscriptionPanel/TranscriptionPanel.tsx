@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Room, RoomEvent } from 'livekit-client';
 import { Mic, X, MessageSquare, AlertCircle } from 'lucide-react';
 import styles from './TranscriptionPanel.module.css';
@@ -24,7 +24,7 @@ interface ActiveTranscript {
 
 export default function TranscriptionPanel({ room, roomId, onClose }: TranscriptionPanelProps) {
   const [messages, setMessages] = useState<TranscriptMessage[]>([]);
-  const [activeTranscripts, setActiveTranscripts] = useState<Record<String, ActiveTranscript>>({});
+  const [activeTranscripts, setActiveTranscripts] = useState<Record<string, ActiveTranscript>>({});
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected');
   const [micPermissionError, setMicPermissionError] = useState(false);
 
@@ -48,7 +48,7 @@ export default function TranscriptionPanel({ room, roomId, onClose }: Transcript
         const data = JSON.parse(decoded);
 
         if (data.type === 'transcript') {
-          const sender = data.senderName || participant?.identity || 'Anonymous';
+          const sender: string = data.senderName || participant?.identity || 'Anonymous';
           
           if (data.isFinal) {
             // Remove from active interim transcripts and add to final message list
@@ -166,7 +166,7 @@ export default function TranscriptionPanel({ room, roomId, onClose }: Transcript
           // Extract Deepgram diarization speaker tag from words list
           const words = parsed.channel?.alternatives?.[0]?.words;
           const speakerTag = words && words.length > 0 ? (words[0].speaker ?? 0) : 0;
-          const localName = room.localParticipant.name || room.localParticipant.identity;
+          const localName: string = room.localParticipant.name || room.localParticipant.identity;
 
           // Render local transcription directly to UI to save latency
           if (isFinal) {

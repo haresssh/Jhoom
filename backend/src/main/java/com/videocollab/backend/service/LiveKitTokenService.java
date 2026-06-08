@@ -21,7 +21,15 @@ public class LiveKitTokenService {
     private String apiSecret;
 
     private Key getSigningKey() {
-        return new SecretKeySpec(apiSecret.getBytes(), SignatureAlgorithm.HS256.getJcaName());
+        byte[] secretBytes = apiSecret.getBytes();
+        if (secretBytes.length < 32) {
+            byte[] paddedBytes = new byte[32];
+            System.arraycopy(secretBytes, 0, paddedBytes, 0, secretBytes.length);
+            // Log a warning that a padded key will be used
+            System.err.println("WARNING: LiveKit API secret is less than 32 bytes. Padded to 32 bytes for HS256 compliance.");
+            secretBytes = paddedBytes;
+        }
+        return new SecretKeySpec(secretBytes, SignatureAlgorithm.HS256.getJcaName());
     }
 
     /**
