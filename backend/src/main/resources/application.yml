@@ -6,6 +6,8 @@ server:
 spring:
   application:
     name: video-collaboration-backend
+  profiles:
+    active: local
 
   # Database configuration
   datasource:

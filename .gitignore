@@ -37,6 +37,7 @@ release.properties
 *.secret
 credentials*
 *private_key*
+**/application-local.yml
 
 # Log files
 *.log
