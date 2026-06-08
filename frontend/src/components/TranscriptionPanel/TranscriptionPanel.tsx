@@ -32,6 +32,7 @@ export default function TranscriptionPanel({ room, roomId, onClose }: Transcript
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioStreamRef = useRef<MediaStream | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const keepAliveIntervalRef = useRef<any>(null);
 
   // Auto-scroll transcript container to bottom on new messages
   useEffect(() => {
@@ -138,6 +139,13 @@ export default function TranscriptionPanel({ room, roomId, onClose }: Transcript
       ws.onopen = () => {
         setConnectionStatus('connected');
         
+        // Start KeepAlive ping interval every 10 seconds to keep connection alive when muted
+        keepAliveIntervalRef.current = setInterval(() => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'KeepAlive' }));
+          }
+        }, 10000);
+        
         // 5. Initialize and start MediaRecorder once WebSocket is open
         const mediaRecorder = mimeType 
           ? new MediaRecorder(audioStreamRef.current!, { mimeType })
@@ -146,7 +154,8 @@ export default function TranscriptionPanel({ room, roomId, onClose }: Transcript
         mediaRecorderRef.current = mediaRecorder;
 
         mediaRecorder.ondataavailable = (event) => {
-          if (event.data && event.data.size > 0 && ws.readyState === WebSocket.OPEN) {
+          const isMuted = !room.localParticipant.isMicrophoneEnabled;
+          if (event.data && event.data.size > 0 && ws.readyState === WebSocket.OPEN && !isMuted) {
             ws.send(event.data);
           }
         };
@@ -229,6 +238,10 @@ export default function TranscriptionPanel({ room, roomId, onClose }: Transcript
   };
 
   const stopLocalTranscription = () => {
+    if (keepAliveIntervalRef.current) {
+      clearInterval(keepAliveIntervalRef.current);
+      keepAliveIntervalRef.current = null;
+    }
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
     }
