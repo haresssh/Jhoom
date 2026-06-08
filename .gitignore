@@ -1,0 +1,43 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build and target directories
+target/
+dist/
+build/
+bin/
+out/
+node_modules/
+.gradle/
+.mvn/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.next
+pom.xml.versionsBackup
+release.properties
+
+# IDE specific files
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.classpath
+.project
+.factorypath
+
+# Environment secrets (Critical for security and anonymity)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.secret
+credentials*
+*private_key*
+
+# Log files
+*.log
+logs/

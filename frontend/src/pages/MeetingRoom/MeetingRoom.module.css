@@ -1,0 +1,194 @@
+.container {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background-color: var(--bg-darker);
+}
+
+.workspace {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.header {
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 10;
+  background: linear-gradient(to bottom, rgba(7, 10, 19, 0.8) 0%, transparent 100%);
+}
+
+.roomInfo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.roomName {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.badge {
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  color: #818cf8;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.gridContainer {
+  flex: 1;
+  padding: 24px;
+  padding-bottom: 110px; /* Leave space for floating controls bar */
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Custom LiveKit component overrides for premium style */
+.gridContainer :global(.lk-grid-layout) {
+  background-color: transparent !important;
+  border: none !important;
+  width: 100% !important;
+  height: 100% !important;
+  gap: 16px !important;
+}
+
+.gridContainer :global(.lk-participant-tile) {
+  background: var(--bg-card) !important;
+  backdrop-filter: var(--glass-blur) !important;
+  -webkit-backdrop-filter: var(--glass-blur) !important;
+  border: 1px solid var(--border-card) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2) !important;
+  transition: var(--transition-smooth) !important;
+}
+
+.gridContainer :global(.lk-participant-tile:hover) {
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.gridContainer :global(.lk-participant-name) {
+  background: rgba(7, 10, 19, 0.6) !important;
+  backdrop-filter: blur(4px) !important;
+  border-radius: 6px !important;
+  padding: 4px 8px !important;
+  font-size: 13px !important;
+  font-family: inherit !important;
+}
+
+/* Floating bottom controls bar */
+.controlsBar {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 24px;
+  border-radius: 50px;
+  z-index: 20;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
+.controlBtn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.controlBtn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
+}
+
+.controlBtnActive {
+  background: var(--primary) !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 12px var(--primary-glow);
+}
+
+.controlBtnActive:hover {
+  background: var(--primary-hover) !important;
+  box-shadow: 0 0 16px rgba(99, 102, 241, 0.7);
+}
+
+.controlBtnDanger {
+  background: var(--error) !important;
+  border-color: var(--error) !important;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+}
+
+.controlBtnDanger:hover {
+  background: var(--error-hover) !important;
+  box-shadow: 0 6px 18px rgba(239, 68, 68, 0.4);
+}
+
+.divider {
+  width: 1px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Dialog Overlay for guest login */
+.dialogOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(7, 10, 19, 0.85);
+  backdrop-filter: blur(8px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.dialog {
+  width: 100%;
+  max-width: 400px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.dialogTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.dialogForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
