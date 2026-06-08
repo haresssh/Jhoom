@@ -1,7 +1,6 @@
 package com.videocollab.backend.security;
 
 import io.jsonwebtoken.*;
-import io.jsonwebtoken.security.Keys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,6 +8,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
+import javax.crypto.spec.SecretKeySpec;
 import java.security.Key;
 import java.util.Base64;
 import java.util.Date;
@@ -25,7 +25,7 @@ public class JwtUtils {
 
     private Key key() {
         byte[] decodedKey = Base64.getDecoder().decode(jwtSecret);
-        return Keys.hmacShaKeyFor(decodedKey);
+        return new SecretKeySpec(decodedKey, SignatureAlgorithm.HS256.getJcaName());
     }
 
     public String generateJwtToken(Authentication authentication) {
