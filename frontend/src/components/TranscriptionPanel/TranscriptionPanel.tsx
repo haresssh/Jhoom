@@ -131,7 +131,7 @@ export default function TranscriptionPanel({ room, roomId, onClose }: Transcript
 
       // 4. Open WebSocket connection to Deepgram
       // Pass token inside sub-protocols parameters to satisfy browser security rules
-      const wsUrl = 'wss://api.deepgram.com/v1/listen?encoding=webm-opus&sample_rate=16000&diarize=true&interim_results=true&endpointing=300';
+      const wsUrl = 'wss://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&diarize=true&interim_results=true&endpointing=300';
       const ws = new WebSocket(wsUrl, ['token', ephemeralToken]);
       socketRef.current = ws;
 
