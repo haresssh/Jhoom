@@ -56,7 +56,7 @@ export default function Signup() {
     <div className={styles.container}>
       <div className={`${styles.card} glass-panel animate-fade`}>
         <div className={styles.header}>
-          <div className={styles.logo}>VideoCollab</div>
+          <div className={styles.logo}>Jhoom</div>
           <h2 className={styles.title}>Create Account</h2>
           <p className={styles.subtitle}>Register as a host to start video calls</p>
         </div>

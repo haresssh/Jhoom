@@ -1,16 +1,22 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { Room, RoomEvent } from 'livekit-client';
-import { Mic, X, MessageSquare, AlertCircle } from 'lucide-react';
+import { Mic, X, MessageSquare, AlertCircle, Download } from 'lucide-react';
 import { API_BASE_URL } from '../../config';
+import { IconButton, Button } from '@mui/material';
 import styles from './TranscriptionPanel.module.css';
 
 interface TranscriptionPanelProps {
   room: Room;
   roomId: string;
   onClose: () => void;
+  messages: TranscriptMessage[];
+  setMessages: React.Dispatch<React.SetStateAction<TranscriptMessage[]>>;
+  isTranscriptionStopped: boolean;
+  isHost: boolean;
+  onToggleTranscriptionGlobal: (val: boolean) => void;
 }
 
-interface TranscriptMessage {
+export interface TranscriptMessage {
   id: string;
   senderName: string;
   text: string;
@@ -23,17 +29,37 @@ interface ActiveTranscript {
   speakerTag: number;
 }
 
-export default function TranscriptionPanel({ room, roomId, onClose }: TranscriptionPanelProps) {
-  const [messages, setMessages] = useState<TranscriptMessage[]>([]);
+export default function TranscriptionPanel({ 
+  room, roomId, onClose, messages, setMessages,
+  isTranscriptionStopped, isHost, onToggleTranscriptionGlobal 
+}: TranscriptionPanelProps) {
   const [activeTranscripts, setActiveTranscripts] = useState<Record<string, ActiveTranscript>>({});
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected');
   const [micPermissionError, setMicPermissionError] = useState(false);
+
+  const handleDownloadTranscript = () => {
+    if (messages.length === 0) return;
+    const textContent = messages.map(msg => {
+      const time = new Date(msg.timestamp).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      return `[${time}] ${msg.senderName}: ${msg.text}`;
+    }).join('\n');
+    
+    const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Transcript_${roomId || 'meeting'}_${new Date().toISOString().split('T')[0]}.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   const socketRef = useRef<WebSocket | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioStreamRef = useRef<MediaStream | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const keepAliveIntervalRef = useRef<any>(null);
+  const processedIdsRef = useRef<Set<string>>(new Set());
+  const activeSessionIdRef = useRef<string | null>(null);
 
   // Auto-scroll transcript container to bottom on new messages
   useEffect(() => {
@@ -42,36 +68,47 @@ export default function TranscriptionPanel({ room, roomId, onClose }: Transcript
     }
   }, [messages, activeTranscripts]);
 
+  // Deduplicated message adder — prevents adding the same transcript twice
+  const addMessage = useCallback((msg: TranscriptMessage) => {
+    if (processedIdsRef.current.has(msg.id)) return;
+    processedIdsRef.current.add(msg.id);
+    setMessages(prev => [...prev, msg]);
+  }, [setMessages]);
+
   useEffect(() => {
-    // 1. Listen for incoming LiveKit Data Channel messages from OTHER participants
+    const localIdentity = room.localParticipant.identity;
+
+    // 1. Listen for incoming LiveKit Data Channel messages from OTHER participants only
     const handleDataReceived = (payload: Uint8Array, participant?: any) => {
       try {
         const decoded = new TextDecoder().decode(payload);
         const data = JSON.parse(decoded);
 
         if (data.type === 'transcript') {
-          const sender: string = data.senderName || participant?.identity || 'Anonymous';
+          const senderIdentity: string = data.senderIdentity || participant?.identity || '';
+          
+          // Skip messages sent by ourselves — we already rendered them locally
+          if (senderIdentity === localIdentity) return;
+
+          const sender: string = data.senderName || senderIdentity || 'Anonymous';
           
           if (data.isFinal) {
-            // Remove from active interim transcripts and add to final message list
             setActiveTranscripts(prev => {
               const updated = { ...prev };
               delete updated[sender];
               return updated;
             });
 
-            setMessages(prev => [
-              ...prev,
-              {
-                id: `${sender}-${Date.now()}`,
-                senderName: sender,
-                text: data.text,
-                timestamp: new Date(),
-                speakerTag: data.speakerTag ?? 0
-              }
-            ]);
+            // Use the sender's generated id for perfect deduplication
+            const msgId = data.id || `remote-${sender}-${data.text}-${Date.now()}`;
+            addMessage({
+              id: msgId,
+              senderName: sender,
+              text: data.text,
+              timestamp: new Date(),
+              speakerTag: data.speakerTag ?? 0
+            });
           } else {
-            // Update active interim transcript
             setActiveTranscripts(prev => ({
               ...prev,
               [sender]: {
@@ -88,24 +125,35 @@ export default function TranscriptionPanel({ room, roomId, onClose }: Transcript
 
     room.on(RoomEvent.DataReceived, handleDataReceived);
     
-    // Start local transcription capturing
-    startLocalTranscription();
+    // Start local transcription capturing ONLY if not stopped globally
+    if (!isTranscriptionStopped) {
+      startLocalTranscription();
+    } else {
+      stopLocalTranscription();
+    }
 
     return () => {
       room.off(RoomEvent.DataReceived, handleDataReceived);
       stopLocalTranscription();
     };
-  }, [room, roomId]);
+  }, [room, roomId, addMessage, isTranscriptionStopped]);
 
   const startLocalTranscription = async () => {
+    const sessionId = Math.random().toString();
+    activeSessionIdRef.current = sessionId;
+
     setConnectionStatus('connecting');
     setMicPermissionError(false);
 
     try {
-      // 1. Request microphone access from browser
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      if (activeSessionIdRef.current !== sessionId) {
+        stream.getTracks().forEach(track => track.stop());
+        return;
+      }
       audioStreamRef.current = stream;
     } catch (err) {
+      if (activeSessionIdRef.current !== sessionId) return;
       console.error('Microphone permission denied:', err);
       setMicPermissionError(true);
       setConnectionStatus('error');
@@ -113,41 +161,47 @@ export default function TranscriptionPanel({ room, roomId, onClose }: Transcript
     }
 
     try {
-      // 2. Fetch short-lived ephemeral Deepgram token from backend
       const response = await fetch(`${API_BASE_URL}/api/transcription/token?roomId=${roomId}`);
+      if (activeSessionIdRef.current !== sessionId) return;
       if (!response.ok) {
         throw new Error('Failed to fetch Deepgram token');
       }
       const data = await response.json();
       const ephemeralToken = data.token;
 
-      // 3. Select supported audio MIME type
+      if (activeSessionIdRef.current !== sessionId) return;
+
       let mimeType = 'audio/webm';
       if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
         mimeType = 'audio/webm;codecs=opus';
       } else if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) {
         mimeType = 'audio/ogg;codecs=opus';
       } else if (!MediaRecorder.isTypeSupported('audio/webm')) {
-        mimeType = ''; // Let browser decide fallback
+        mimeType = '';
       }
 
-      // 4. Open WebSocket connection to Deepgram
-      // Pass token inside sub-protocols parameters to satisfy browser security rules
-      const wsUrl = 'wss://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&diarize=true&interim_results=true&endpointing=300';
+      const wsUrl = 'wss://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&interim_results=true&endpointing=300';
       const ws = new WebSocket(wsUrl, ['token', ephemeralToken]);
+      
+      if (activeSessionIdRef.current !== sessionId) {
+        ws.close();
+        return;
+      }
       socketRef.current = ws;
 
       ws.onopen = () => {
+        if (activeSessionIdRef.current !== sessionId) {
+          ws.close();
+          return;
+        }
         setConnectionStatus('connected');
         
-        // Start KeepAlive ping interval every 10 seconds to keep connection alive when muted
         keepAliveIntervalRef.current = setInterval(() => {
           if (ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({ type: 'KeepAlive' }));
           }
         }, 10000);
         
-        // 5. Initialize and start MediaRecorder once WebSocket is open
         const mediaRecorder = mimeType 
           ? new MediaRecorder(audioStreamRef.current!, { mimeType })
           : new MediaRecorder(audioStreamRef.current!);
@@ -161,7 +215,6 @@ export default function TranscriptionPanel({ room, roomId, onClose }: Transcript
           }
         };
 
-        // Pipe audio chunks to Deepgram every 250 milliseconds
         mediaRecorder.start(250);
       };
 
@@ -172,13 +225,13 @@ export default function TranscriptionPanel({ room, roomId, onClose }: Transcript
           if (!transcript || !transcript.trim()) return;
 
           const isFinal = parsed.is_final;
-          
-          // Extract Deepgram diarization speaker tag from words list
           const words = parsed.channel?.alternatives?.[0]?.words;
           const speakerTag = words && words.length > 0 ? (words[0].speaker ?? 0) : 0;
           const localName: string = room.localParticipant.name || room.localParticipant.identity;
+          const localIdentity: string = room.localParticipant.identity;
 
-          // Render local transcription directly to UI to save latency
+          let finalMsgId = '';
+
           if (isFinal) {
             setActiveTranscripts(prev => {
               const updated = { ...prev };
@@ -186,16 +239,15 @@ export default function TranscriptionPanel({ room, roomId, onClose }: Transcript
               return updated;
             });
 
-            setMessages(prev => [
-              ...prev,
-              {
-                id: `local-${Date.now()}`,
-                senderName: localName,
-                text: transcript,
-                timestamp: new Date(),
-                speakerTag
-              }
-            ]);
+            // Generate unique message ID for deduplication across all participants
+            finalMsgId = `tr-${localName}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+            addMessage({
+              id: finalMsgId,
+              senderName: localName,
+              text: transcript,
+              timestamp: new Date(),
+              speakerTag
+            });
           } else {
             setActiveTranscripts(prev => ({
               ...prev,
@@ -203,18 +255,20 @@ export default function TranscriptionPanel({ room, roomId, onClose }: Transcript
             }));
           }
 
-          // 6. Broadcast transcription JSON via LiveKit Data Channel to other participants
+          // Broadcast transcription via LiveKit Data Channel to other participants
           const payload = JSON.stringify({
             type: 'transcript',
+            id: finalMsgId || undefined,
             text: transcript,
             isFinal,
             speakerTag,
-            senderName: localName
+            senderName: localName,
+            senderIdentity: localIdentity
           });
           
           room.localParticipant.publishData(
             new TextEncoder().encode(payload),
-            { reliable: true }
+            { reliable: isFinal }
           );
         } catch (err) {
           console.error('Error handling Deepgram WebSocket message:', err);
@@ -227,10 +281,8 @@ export default function TranscriptionPanel({ room, roomId, onClose }: Transcript
       };
 
       ws.onclose = () => {
-        logger.info('Deepgram WebSocket connection closed');
-        if (connectionStatus !== 'error') {
-          setConnectionStatus('disconnected');
-        }
+        console.log('[Transcription] Deepgram WebSocket connection closed');
+        setConnectionStatus((prev) => prev !== 'error' ? 'disconnected' : prev);
       };
     } catch (err) {
       console.error('Failed to initialize Deepgram WebSocket:', err);
@@ -239,6 +291,7 @@ export default function TranscriptionPanel({ room, roomId, onClose }: Transcript
   };
 
   const stopLocalTranscription = () => {
+    activeSessionIdRef.current = null;
     if (keepAliveIntervalRef.current) {
       clearInterval(keepAliveIntervalRef.current);
       keepAliveIntervalRef.current = null;
@@ -259,11 +312,12 @@ export default function TranscriptionPanel({ room, roomId, onClose }: Transcript
   };
 
   const getStatusText = () => {
+    if (isTranscriptionStopped) return 'Transcription Paused';
     switch (connectionStatus) {
       case 'connected': return 'Transcription Active';
-      case 'connecting': return 'Connecting AI...';
-      case 'error': return 'AI Offline';
-      default: return 'Disconnected';
+      case 'connecting': return 'Connecting Transcription...';
+      case 'error': return 'Transcription Offline';
+      default: return 'Transcription Offline';
     }
   };
 
@@ -275,9 +329,16 @@ export default function TranscriptionPanel({ room, roomId, onClose }: Transcript
           <MessageSquare size={18} className="text-primary" />
           <span>Live Transcript</span>
         </div>
-        <button className={styles.closeBtn} onClick={onClose} title="Close Panel">
-          <X size={18} />
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          {messages.length > 0 && (
+            <IconButton size="small" onClick={handleDownloadTranscript} title="Download Transcript">
+              <Download size={18} />
+            </IconButton>
+          )}
+          <IconButton size="small" onClick={onClose} title="Close Panel">
+            <X size={18} />
+          </IconButton>
+        </div>
       </div>
 
       {/* Main scrolling transcripts area */}
@@ -297,7 +358,7 @@ export default function TranscriptionPanel({ room, roomId, onClose }: Transcript
           <div key={msg.id} className={styles.message}>
             <div className={styles.meta}>
               <span className={styles.speaker}>
-                {msg.senderName} (Speaker {msg.speakerTag})
+                {msg.senderName}
               </span>
               <span className={styles.time}>
                 {msg.timestamp.toLocaleTimeString(undefined, {
@@ -316,7 +377,7 @@ export default function TranscriptionPanel({ room, roomId, onClose }: Transcript
           <div key={`interim-${sender}`} className={styles.message}>
             <div className={styles.meta}>
               <span className={styles.speaker} style={{ color: 'var(--text-secondary)' }}>
-                {sender} (Speaker {active.speakerTag})
+                {sender}
               </span>
             </div>
             <div className={`${styles.text} ${styles.interim}`}>{active.text}</div>
@@ -333,18 +394,35 @@ export default function TranscriptionPanel({ room, roomId, onClose }: Transcript
 
       {/* Footer Connection Status Bar */}
       <div className={styles.statusIndicator}>
-        <div className={`${styles.statusDot} ${
-          connectionStatus === 'connected' ? styles.statusConnected :
-          connectionStatus === 'connecting' ? styles.statusConnecting :
-          connectionStatus === 'error' ? styles.statusError : ''
-        }`} />
-        <span>{getStatusText()}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className={`${styles.statusDot} ${
+            isTranscriptionStopped ? '' :
+            connectionStatus === 'connected' ? styles.statusConnected :
+            connectionStatus === 'connecting' ? styles.statusConnecting :
+            connectionStatus === 'error' ? styles.statusError : ''
+          }`} />
+          <span>{getStatusText()}</span>
+        </div>
+        
+        {isHost && (
+          <Button
+            size="small"
+            color={isTranscriptionStopped ? "primary" : "error"}
+            variant="outlined"
+            onClick={() => onToggleTranscriptionGlobal(isTranscriptionStopped)}
+            style={{ 
+              textTransform: 'none', 
+              borderRadius: '8px', 
+              fontSize: '11px', 
+              padding: '2px 8px',
+              fontWeight: 600,
+              height: '24px'
+            }}
+          >
+            {isTranscriptionStopped ? "Enable Transcription" : "Disable Transcription"}
+          </Button>
+        )}
       </div>
     </div>
   );
 }
-
-// Log utility fallback
-const logger = {
-  info: (msg: string) => console.log(`[Transcription] ${msg}`)
-};

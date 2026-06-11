@@ -59,11 +59,15 @@ public class WebSecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/rooms/*/metadata").permitAll() // Guests check room settings
                 .requestMatchers("/api/rooms/*/join").permitAll() // Guests join rooms anonymously
+                .requestMatchers("/api/rooms/*/requests").permitAll() // Guests apply for admission
+                .requestMatchers("/api/rooms/requests/*/status").permitAll() // Guests check request status
                 .requestMatchers("/api/transcription/token").permitAll() // Room participants fetch temporary Deepgram key
                 .requestMatchers("/error").permitAll()
-                // Static assets (if serving React from Spring Boot)
+                // Static assets & frontend routes (if serving React from Spring Boot)
                 .requestMatchers("/", "/index.html", "/assets/**", "/vite.svg", "/static/**").permitAll()
+                .requestMatchers("/login", "/signup", "/room/**", "/left-meeting/**").permitAll()
                 .anyRequest().authenticated()
             );
 

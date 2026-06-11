@@ -8,14 +8,6 @@ spring:
     name: video-collaboration-backend
   profiles:
     active: local
-
-  # Database configuration
-  datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:videocollab}
-    username: ${DB_USER:postgres}
-    password: ${DB_PASS:postgres}
-    driver-class-name: org.postgresql.Driver
-  
   # JPA / Hibernate configuration
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
@@ -29,8 +21,6 @@ spring:
 # Security & Third-Party API configuration
 app:
   jwt:
-    # Secret key used to sign application JWTs (must be 256-bit / 32-bytes minimum)
-    secret: ${JWT_SECRET:dGhpcy1pcy1hLXNlY3JldC1rZXktZm9yLXZpZGVvLWNvbGxhYm9yYXRpb24tcGxhdGZvcm0tMjAyNg==}
     # Token expiration time (24 hours in milliseconds)
     expiration-ms: 86400000
 

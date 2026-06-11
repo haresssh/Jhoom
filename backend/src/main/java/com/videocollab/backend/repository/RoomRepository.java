@@ -13,4 +13,5 @@ public interface RoomRepository extends JpaRepository<Room, String> {
     List<Room> findByHost(User host);
     List<Room> findByHostAndIsActive(User host, boolean isActive);
     Optional<Room> findByIdAndIsActive(String id, boolean isActive);
+    List<Room> findByHostOrderByCreatedAtDesc(User host);
 }

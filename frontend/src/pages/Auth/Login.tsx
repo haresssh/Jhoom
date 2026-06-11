@@ -47,7 +47,7 @@ export default function Login() {
     <div className={styles.container}>
       <div className={`${styles.card} glass-panel animate-fade`}>
         <div className={styles.header}>
-          <div className={styles.logo}>VideoCollab</div>
+          <div className={styles.logo}>Jhoom</div>
           <h2 className={styles.title}>Welcome Back</h2>
           <p className={styles.subtitle}>Log in as a host to start meetings</p>
         </div>

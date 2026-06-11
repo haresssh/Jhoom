@@ -38,6 +38,9 @@ release.properties
 credentials*
 *private_key*
 **/application-local.yml
+*.pem
+jhoom-key.pem
+scratch/
 
 # Log files
 *.log

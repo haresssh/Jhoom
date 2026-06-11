@@ -1,60 +1,68 @@
+/* ======= Dashboard Container ======= */
 .container {
-  max-width: 1024px;
+  max-width: 1000px;
   margin: 0 auto;
-  padding: 40px 24px;
+  padding: 32px 24px;
   display: flex;
   flex-direction: column;
   gap: 32px;
+  min-height: 100vh;
 }
 
+/* ======= Top Navbar ======= */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 16px 24px;
-  border-radius: 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(31, 52, 86, 0.08);
+  box-shadow: 0 2px 12px rgba(23, 23, 49, 0.03);
 }
 
 .logo {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 800;
-  background: linear-gradient(135deg, var(--primary) 0%, #a78bfa 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--focus-blue) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  letter-spacing: -0.5px;
 }
 
 .userInfo {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 .username {
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-primary);
+  font-size: 14px;
 }
 
+/* ======= Main Grid (Up and Down Stacked) ======= */
 .grid {
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 32px;
 }
 
-@media (min-width: 768px) {
-  .grid {
-    grid-template-columns: 2fr 3fr;
-  }
-}
-
+/* ======= Section Titles ======= */
 .sectionTitle {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 16px;
+  letter-spacing: -0.3px;
 }
 
+/* ======= Create Room Card ======= */
 .card {
-  padding: 32px;
+  padding: 28px;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -64,106 +72,254 @@
 .form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 24px;
 }
 
-.inputGroup {
+.formCols {
   display: flex;
   flex-direction: column;
+  gap: 24px;
+}
+
+@media (min-width: 768px) {
+  .formCols {
+    flex-direction: row;
+    gap: 40px;
+  }
+}
+
+.formLeft, .formRight {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ======= Options Divider (GUEST RULES) ======= */
+.optionsDivider {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-muted);
+  border-bottom: 1px solid rgba(31, 52, 86, 0.08);
+  padding-bottom: 6px;
+  margin-top: 4px;
+}
+
+/* ======= Toggle Rows ======= */
+.toggleGroup {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+
+.toggleLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 360px;
+}
+
+.toggleTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.toggleDesc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+/* ======= Tabs Area (Right Side) ======= */
+.tabsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.tabBar {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid rgba(31, 52, 86, 0.08);
+  margin-bottom: 16px;
+}
+
+.tab {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  border: none;
+  background: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
   gap: 8px;
 }
 
-.label {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-secondary);
+.tab:hover {
+  color: var(--text-primary);
 }
 
+.tabActive {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+.tabBadge {
+  background: var(--primary);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 10px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.tabBadgeMuted {
+  background: rgba(31, 52, 86, 0.1);
+  color: var(--text-muted);
+}
+
+/* ======= Room List ======= */
 .roomList {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
+/* ======= Room Card ======= */
 .roomCard {
-  padding: 20px;
+  padding: 20px 24px;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  transition: var(--transition-smooth);
+  flex-direction: column;
+  gap: 14px;
+  transition: all 0.2s ease;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(31, 52, 86, 0.08);
 }
 
 .roomCard:hover {
-  border-color: var(--primary);
-  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.1);
+  border-color: rgba(4, 96, 255, 0.2);
+  box-shadow: 0 4px 20px rgba(4, 96, 255, 0.05);
+}
+
+.roomCardEnded {
+  opacity: 0.75;
+}
+
+.roomCardEnded:hover {
+  opacity: 1;
+}
+
+.roomTopRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
 }
 
 .roomInfo {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.roomNameRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .roomName {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.statusBadge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.statusLive {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.statusEnded {
+  background: rgba(31, 52, 86, 0.06);
+  color: var(--text-muted);
+  border: 1px solid rgba(31, 52, 86, 0.1);
 }
 
 .roomId {
-  font-size: 13px;
-  font-family: monospace;
+  font-size: 12px;
+  font-family: 'SF Mono', 'Menlo', monospace;
   color: var(--text-muted);
 }
 
 .roomMeta {
   font-size: 12px;
   color: var(--text-secondary);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
+/* ======= Room Action Buttons (Labeled) ======= */
 .roomActions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-.actionBtn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 6px;
-  padding: 8px;
-  color: var(--text-secondary);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: var(--transition-smooth);
-}
-
-.actionBtn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-primary);
-}
-
-.actionBtnDanger:hover {
-  background: rgba(239, 68, 68, 0.15);
-  color: #fca5a5;
-  border-color: rgba(239, 68, 68, 0.3);
-}
-
+/* ======= Empty State ======= */
 .emptyState {
   text-align: center;
-  padding: 40px;
+  padding: 56px 32px;
   color: var(--text-muted);
-  border: 1.5px dashed rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
+  border: 1.5px dashed rgba(31, 52, 86, 0.12);
+  border-radius: 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 12px;
+  background: rgba(255, 255, 255, 0.4);
 }
 
 .emptyIcon {
   color: var(--text-muted);
   opacity: 0.5;
+}
+
+/* ======= Duration pill ======= */
+.durationPill {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: rgba(31, 52, 86, 0.04);
+  padding: 2px 8px;
+  border-radius: 6px;
 }
