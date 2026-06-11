@@ -53,6 +53,8 @@ flowchart TD
   ![Host Dashboard Empty](docs/screenshots/03_dashboard_empty.png)
 * **Active Room Administration:** Manage ongoing meetings, copy direct URLs, or terminate active calls.
   ![Host Dashboard Active](docs/screenshots/04_dashboard_active.png)
+* **Past Meetings History:** View ended meeting logs complete with host name, schedule, duration, and maximum participants configurations.
+  ![Host Dashboard Past Meetings](docs/screenshots/10_past_meetings.png)
 
 ### **Meeting Room Session**
 * **Responsive Video Grid & Controls:** Dynamic WebRTC participant tiles with integrated participants list, active host administration controllers (remote mute, kick/remove), and real-time transcription panel with speaker attribution and download logs.
