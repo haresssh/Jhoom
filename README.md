@@ -2,6 +2,20 @@
 
 A production-grade, spec-driven WebRTC video conferencing platform featuring secure host authentication, instant guest access, and real-time AI-powered speech-to-text transcription with speaker diarization.
 
+```mermaid
+flowchart TD
+    Frontend["React Frontend (TypeScript)"]
+    Backend["Spring Boot Backend (Java)"]
+    DB[("PostgreSQL Database")]
+    LiveKit["LiveKit SFU (Video Room Management)"]
+    Deepgram["Deepgram API (Real-time Speech-to-Text)"]
+
+    Frontend <-->|"REST / HTTPS (Auth, Rooms)"| Backend
+    Backend -->|"JDBC / JPA"| DB
+    Frontend -->|"WebSockets / WebRTC (Media & Data)"| LiveKit
+    LiveKit -->|"WebSockets (Audio Chunks)"| Deepgram
+```
+
 ---
 
 ## 1. Submission Metadata & Scoping

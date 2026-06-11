@@ -65,6 +65,7 @@ public class WebSecurityConfig {
                 .requestMatchers("/api/rooms/requests/*/status").permitAll() // Guests check request status
                 .requestMatchers("/api/transcription/token").permitAll() // Room participants fetch temporary Deepgram key
                 .requestMatchers("/error").permitAll()
+                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll() // Swagger UI & API docs
                 // Static assets & frontend routes (if serving React from Spring Boot)
                 .requestMatchers("/", "/index.html", "/assets/**", "/vite.svg", "/static/**").permitAll()
                 .requestMatchers("/login", "/signup", "/room/**", "/left-meeting/**").permitAll()

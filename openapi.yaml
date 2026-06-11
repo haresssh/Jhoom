@@ -1,0 +1,397 @@
+openapi: 3.0.3
+info:
+  title: Jhoom Video Collaboration API
+  description: Backend REST API specifications for Jhoom, a next-generation video conferencing platform featuring secure host authentication, guest lobby waiting rooms, and real-time AI transcription token distribution.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Local Development Server
+  - url: https://jh-092621805d2c4e20abfe451975ac80ba.ecs.us-east-1.on.aws
+    description: Production ECS Express Mode Ingress
+paths:
+  /api/auth/register:
+    post:
+      summary: Register a new Host User
+      description: Creates a new user account with BCrypt password hashing. Only registered hosts can create meeting rooms.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+      responses:
+        '201':
+          description: Registration Successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          description: Username already taken or invalid inputs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/login:
+    post:
+      summary: Host Authentication
+      description: Validates host credentials and issues a stateless JWT session token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authentication Successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JwtResponse'
+        '401':
+          description: Invalid username or password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/rooms:
+    post:
+      summary: Create a Meeting Room
+      description: Allows an authenticated Host to provision a new meeting session with custom features (e.g. mic mute on join, guest waiting room approval).
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoomRequest'
+      responses:
+        '201':
+          description: Room Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomResponse'
+        '401':
+          description: Unauthorized JWT Token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/rooms/{roomId}/metadata:
+    get:
+      summary: Check Room Metadata (Public)
+      description: Used by guests or hosts before entering to fetch meeting settings (like topic, host approval policy, descriptions) without auth.
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Room Settings Returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomResponse'
+        '404':
+          description: Room not found or inactive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/rooms/{roomId}/join:
+    post:
+      summary: Generate LiveKit WebRTC Access Token (Public)
+      description: Connects a participant (Host or approved Guest) to the LiveKit video server room.
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JoinRoomRequest'
+      responses:
+        '200':
+          description: Access Token Generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  roomId:
+                    type: string
+                  token:
+                    type: string
+                    description: Short-lived LiveKit token for SDK connection
+                  livekitUrl:
+                    type: string
+        '404':
+          description: Room not found
+        '403':
+          description: Room is inactive
+
+  /api/rooms/{roomId}/requests:
+    post:
+      summary: Submit Guest Entry Request (Public)
+      description: Registers a guest applicant application to enter the host's waiting room when `isApprovalRequired` is enabled.
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - guestName
+              properties:
+                guestName:
+                  type: string
+      responses:
+        '201':
+          description: Admission Request Registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JoinRequestResponse'
+
+  /api/rooms/requests/{requestId}/status:
+    get:
+      summary: Check Admission Request Status (Public)
+      description: Long-polled by the guest browser lobby to check if the host has APPROVED, PENDING, or DENIED entry.
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Request State Checked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JoinRequestResponse'
+
+  /api/rooms/{roomId}/requests/pending:
+    get:
+      summary: List Pending Lobby Guest Requests
+      description: Invoked by the Host inside the call to fetch incoming waiting room admissions.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of Pending Guests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/JoinRequestResponse'
+
+  /api/rooms/requests/{requestId}/approve:
+    post:
+      summary: Approve Guest Request
+      description: Invoked by the Host to admit a waiting guest into the WebRTC session.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Request approved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
+  /api/rooms/requests/{requestId}/deny:
+    post:
+      summary: Deny Guest Request
+      description: Invoked by the Host to reject/deny entry to a waiting guest.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Request denied successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
+  /api/transcription/token:
+    get:
+      summary: Retrieve Ephemeral Deepgram API Token (Public)
+      description: Generates a temporary, short-lived API key from Deepgram for active room participants, shielding the host's master token.
+      responses:
+        '200':
+          description: Key Generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  expiresAt:
+                    type: string
+                    format: date-time
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    SignupRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+
+    JwtResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        username:
+          type: string
+
+    CreateRoomRequest:
+      type: object
+      required:
+        - roomName
+      properties:
+        roomName:
+          type: string
+        description:
+          type: string
+        maxParticipants:
+          type: integer
+          default: 10
+        isMutedOnJoin:
+          type: boolean
+          default: false
+        isCameraOffOnJoin:
+          type: boolean
+          default: false
+        isApprovalRequired:
+          type: boolean
+          default: false
+
+    RoomResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        hostId:
+          type: integer
+        isActive:
+          type: boolean
+        maxParticipants:
+          type: integer
+        isMutedOnJoin:
+          type: boolean
+        isCameraOffOnJoin:
+          type: boolean
+        isApprovalRequired:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    JoinRoomRequest:
+      type: object
+      required:
+        - displayName
+      properties:
+        displayName:
+          type: string
+
+    JoinRequestResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        guestName:
+          type: string
+        roomId:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, APPROVED, DENIED]
+
+    ErrorResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string
+        path:
+          type: string

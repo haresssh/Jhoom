@@ -28,7 +28,7 @@ flowchart TD
 * **Database:** PostgreSQL.
 * **Video/Audio Infrastructure:** LiveKit Cloud (WebRTC).
 * **Transcription Service:** Deepgram (Real-time WebSocket Streaming).
-* **Deployment:** AWS RDS (Postgres) + AWS App Runner / Elastic Beanstalk (Unified JAR or split).
+* **Deployment:** Amazon RDS (PostgreSQL) + Amazon ECS Express Mode (AWS Fargate).
 
 ---
 
