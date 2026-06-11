@@ -8,29 +8,18 @@ This document outlines the architecture, database design, API contracts, real-ti
 
 The platform uses a decoupled client-server architecture with third-party integrations for WebRTC (video/audio) and real-time AI transcription:
 
-```
-  +------------------+                   +----------------------+
-  |                  |    REST / HTTPS   |                      |
-  |  React Frontend  | <---------------> |  Spring Boot Backend |
-  |   (TypeScript)   |                   |        (Java)        |
-  |                  |                   +----------+-----------+
-  +--------+---------+                              |
-           |                                        | JDBC / JPA
-           | WebSockets / WebRTC                    v
-           |                               +--------+-----------+
-           +--------------------------->   |     PostgreSQL     |
-           | (Media streams / Data)        |      Database      |
-           |                               +--------------------+
-           v
-  +------------------+
-  |  LiveKit SFU     | (Video Room Management)
-  +------------------+
-           |
-           | WebSockets (Audio Chunks)
-           v
-  +------------------+
-  |  Deepgram API    | (Real-time Speech-to-Text with Speaker Diarization)
-  +------------------+
+```mermaid
+flowchart TD
+    Frontend["React Frontend (TypeScript)"]
+    Backend["Spring Boot Backend (Java)"]
+    DB[("PostgreSQL Database")]
+    LiveKit["LiveKit SFU (Video Room Management)"]
+    Deepgram["Deepgram API (Real-time Speech-to-Text)"]
+
+    Frontend <-->|"REST / HTTPS (Auth, Rooms)"| Backend
+    Backend -->|"JDBC / JPA"| DB
+    Frontend -->|"WebSockets / WebRTC (Media & Data)"| LiveKit
+    LiveKit -->|"WebSockets (Audio Chunks)"| Deepgram
 ```
 
 ### Stack Components:
@@ -156,30 +145,30 @@ All REST endpoints use standard JSON payloads. Protected endpoints require a `Au
 
 To avoid costly server-side mixing, WebRTC media and transcription text stream directly through the client-side mesh using LiveKit and Deepgram.
 
-```
-+---------------------------------------------------------------------------------+
-|                               React Client (Speaker)                            |
-|                                                                                 |
-| 1. Capture Mic -> 2. Pipe chunks to Deepgram -> 3. Receive Live Transcription   |
-|         |                     ^                               |                 |
-|         v                     | WebSockets                    v                 |
-|    [Local Mic]                |                          [Data JSON]            |
-+---------+---------------------+-------------------------------+-----------------+
-          |                     |                               |
-          | WebRTC Audio        |                               | LiveKit Data Channel
-          v                     |                               v
-  +---------------+     +-------+-------+               +---------------+
-  | LiveKit Cloud |     | Deepgram API  |               | LiveKit Cloud |
-  |   SFU Room    |     |  (Streaming)  |               |  Data Relay   |
-  +-------+-------+     +---------------+               +-------+-------+
-          |                                                     |
-          | WebRTC Audio                                        | Relayed Data JSON
-          v                                                     v
-+---------+-----------------------------------------------------+-----------------+
-|                               React Client (Listener)                           |
-|                                                                                 |
-| 4. Play incoming audio track                    5. Render text in Side Panel    |
-+---------------------------------------------------------------------------------+
+```mermaid
+flowchart TD
+    subgraph Speaker["React Client (Speaker)"]
+        Mic["Local Microphone"]
+        TranscribeCap["Capture & Pipe Chunks"]
+        TranscribeDisplay["Live Transcription Panel"]
+    end
+
+    subgraph Listener["React Client (Listener)"]
+        AudioPlay["Play Incoming Audio Track"]
+        SidePanel["Render Text in Side Panel"]
+    end
+
+    LK_SFU["LiveKit Cloud SFU Room"]
+    Deepgram_API["Deepgram API (Streaming)"]
+    LK_Relay["LiveKit Cloud Data Relay"]
+
+    Mic --> TranscribeCap
+    TranscribeCap <-->|"WebSockets"| Deepgram_API
+    TranscribeCap -->|"LiveKit Data Channel"| LK_Relay
+    Mic -->|"WebRTC Audio"| LK_SFU
+
+    LK_SFU -->|"WebRTC Audio"| AudioPlay
+    LK_Relay -->|"Relayed Data JSON"| SidePanel
 ```
 
 ### 4.1. LiveKit Video Grid Flow
