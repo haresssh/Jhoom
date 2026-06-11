@@ -5,7 +5,7 @@
 ## Submission Metadata & Scoping
 
 * **Repository:** [https://github.com/haresssh/Jhoom.git](https://github.com/haresssh/Jhoom.git)
-* **Estimated Scoping Timeframe:** 16–20 Hours
+* **Estimated Scoping Timeframe:** 12–16 Hours
 * **Actual Time Spent:** ~14 Hours
 
 ---
