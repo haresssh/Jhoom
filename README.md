@@ -23,7 +23,7 @@ flowchart TD
 | Metric | Details / Actuals |
 | :--- | :--- |
 | **Public GitHub Repository** | [https://github.com/haresssh/Jhoom](https://github.com/haresssh/Jhoom) |
-| **Estimated Scoping Timeframe** | 16–20 Hours (Determined during specs scoping) |
+| **Estimated Scoping Timeframe** | 12–16 Hours (Determined during specs scoping) |
 | **Actual Time Spent** | ~14 Hours (Scaffolding, WebRTC grid, LiveKit integration, Deepgram stream piping, local network/mobile optimizations, profiles refactoring) |
 
 ---
