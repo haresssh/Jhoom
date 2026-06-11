@@ -218,11 +218,14 @@ To avoid costly server-side mixing, WebRTC media and transcription text stream d
 
 ## 6. AWS Deployment Plan
 
-For the live demo, the application uses a highly cost-efficient AWS setup:
+For production and staging deployments, the application is packaged as a unified Docker container and deployed using **Amazon ECS Express Mode** (AWS Fargate) connected to a managed **Amazon RDS PostgreSQL** database:
 
-* **Database:** **AWS RDS (PostgreSQL)** using a Free Tier `db.t3.micro` instance.
-* **Backend & Frontend Hosting (Mono-Artifact):** 
-  * The React frontend is built (`npm run build`) and its output static folder is placed under `/src/main/resources/static` in the Spring Boot project.
-  * The backend compiles into a single executable fat JAR (`mvn clean package`).
-  * The single JAR is deployed on **AWS App Runner** or **AWS Elastic Beanstalk (EC2 t2.micro)**. 
-  * **Benefit:** Unified domain, zero CORS issues, free HTTPS SSL certificate, and minimum resource consumption.
+* **Database:** **Amazon RDS (PostgreSQL)** configured on a `db.t3.micro` instance. Inbound security rules permit access on port `5432` from ECS tasks.
+* **Ingress & TLS/HTTPS:** ECS Express Mode automatically provisions the Application Load Balancer (ALB), listener target groups, and exposes a secure HTTPS ingress gateway endpoint (`https://*.on.aws`), enabling microphone and camera capture permissions on client web browsers.
+* **Unified Container Service:** 
+  * The application uses a multi-stage Dockerfile that builds the React static assets, bundles them into the Spring Boot JAR, and packages them in a lightweight runtime container.
+  * Container images are pushed to a private **Amazon ECR** repository.
+  * ECS Express Mode deploys and orchestrates the tasks dynamically on AWS Fargate serverless infrastructure.
+* **Benefits:** Out-of-the-box HTTPS/TLS certificates, zero CORS configuration conflicts, automated infrastructure provisioning, and serverless compute scaling.
+
+To redeploy or tear down the stack, refer to the detailed [deployment_runbook.md](file:///Users/hareshprajapati/dev/video-collaboration-platform/deployment_runbook.md) in the repository root.

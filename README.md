@@ -83,18 +83,14 @@ To test on a mobile phone easily over HTTPS without any certificate setups:
 
 ## 5. AWS Production Deployment Guide
 
-We support a highly cost-efficient **Mono-Artifact Deployment** that runs completely inside the **AWS Free Tier**:
+We deploy the platform as a containerized unified application to **Amazon ECS Express Mode** (AWS Fargate) connected to a managed **Amazon RDS PostgreSQL** database:
 
-1. **Statically bundle the React frontend** inside the Spring Boot build directory:
+1. **Build the Docker Container:**
+   Packages both the Vite/React static assets and the Spring Boot fat JAR into a single Temurin JRE container:
    ```bash
-   cd frontend
-   npm run build
-   mkdir -p ../backend/src/main/resources/static
-   cp -r dist/* ../backend/src/main/resources/static/
+   docker build --platform linux/amd64 -t jhoom-app .
    ```
-2. **Compile the standalone fat JAR**:
-   ```bash
-   cd ../backend
-   mvn clean package -DskipTests
-   ```
-3. Deploy this single unified JAR directly on **AWS App Runner** or **AWS Elastic Beanstalk (EC2 `t2.micro` / `t3.micro` instance)**. This eliminates CORS configuration issues, simplifies domain SSL/HTTPS certificates, and minimizes resource costs.
+2. **Push to ECR & Launch ECS Express Service:**
+   The image is pushed to Amazon ECR, and the container tasks are launched using ECS Express Mode, which automatically provisions the load balancer, TLS/HTTPS security layers, and ingress gateways.
+
+For complete, step-by-step AWS CLI setup, configuration parameters, and cleanup commands, please refer to the [deployment_runbook.md](file:///Users/hareshprajapati/dev/video-collaboration-platform/deployment_runbook.md) located in the root directory.
