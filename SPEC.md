@@ -1,4 +1,14 @@
-# Technical Specification: Next-Gen Video Collaboration Platform
+# Technical Specification: Jhoom (Next-Gen Video Collaboration Platform)
+
+---
+
+## Submission Metadata & Scoping
+
+* **Repository:** [https://github.com/haresssh/Jhoom.git](https://github.com/haresssh/Jhoom.git)
+* **Estimated Scoping Timeframe:** 16–20 Hours
+* **Actual Time Spent:** ~14 Hours
+
+---
 
 This document outlines the architecture, database design, API contracts, real-time audio/video pipelines, and deployment strategy for the Video Collaboration Platform.
 
@@ -34,7 +44,7 @@ flowchart TD
 
 ## 2. Database Schema (PostgreSQL)
 
-The database stores user profiles, authentication credentials, and meeting session logs.
+The database stores user profiles, credentials, meeting session configs/logs, and guest approval queues.
 
 ```sql
 -- User account storage for Host authentication
@@ -45,14 +55,29 @@ CREATE TABLE users (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Historical meeting room logs
+-- Historical and active meeting room logs
 CREATE TABLE rooms (
-    id VARCHAR(100) PRIMARY KEY, -- Room ID (UUID or random alphanumeric string)
+    id VARCHAR(100) PRIMARY KEY, -- Room ID (custom slug or UUID)
     name VARCHAR(100) NOT NULL,
     host_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
-    is_active BOOLEAN DEFAULT TRUE,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    ended_at TIMESTAMP WITH TIME ZONE
+    ended_at TIMESTAMP WITH TIME ZONE,
+    description VARCHAR(255),
+    max_participants INTEGER NOT NULL DEFAULT 20,
+    is_muted_on_join BOOLEAN NOT NULL DEFAULT FALSE,
+    is_camera_off_on_join BOOLEAN NOT NULL DEFAULT FALSE,
+    is_approval_required BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+-- Guest access/waiting room request queue
+CREATE TABLE join_requests (
+    id VARCHAR(100) PRIMARY KEY, -- Unique request UUID
+    room_id VARCHAR(100) NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+    display_name VARCHAR(100) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING', -- PENDING, APPROVED, DENIED
+    token VARCHAR(1000), -- JWT token generated upon approval
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
@@ -95,12 +120,17 @@ All REST endpoints use standard JSON payloads. Protected endpoints require a `Au
      }
      ```
 
-### 3.2. Room Management
+### 3.2. Room Management & Configurations
 * **`POST /api/rooms`** (Protected - Host Only)
   * Request Body:
      ```json
      {
-       "roomName": "Weekly Sync"
+       "roomName": "Weekly Sync",
+       "description": "Project updates and alignment",
+       "maxParticipants": 20,
+       "isMutedOnJoin": false,
+       "isCameraOffOnJoin": false,
+       "isApprovalRequired": true
      }
      ```
   * Response (201 Created):
@@ -108,7 +138,14 @@ All REST endpoints use standard JSON payloads. Protected endpoints require a `Au
      {
        "roomId": "room-abc-123",
        "roomName": "Weekly Sync",
-       "hostToken": "livekit_host_token_string..."
+       "token": "livekit_host_token_string...",
+       "livekitUrl": "wss://your-livekit-url.com",
+       "role": "host",
+       "description": "Project updates and alignment",
+       "maxParticipants": 20,
+       "isMutedOnJoin": false,
+       "isCameraOffOnJoin": false,
+       "isApprovalRequired": true
      }
      ```
 
@@ -123,12 +160,98 @@ All REST endpoints use standard JSON payloads. Protected endpoints require a `Au
      ```json
      {
        "roomId": "room-abc-123",
+       "roomName": "Weekly Sync",
        "token": "livekit_participant_token_string...",
-       "livekitUrl": "wss://your-livekit-url.com"
+       "livekitUrl": "wss://your-livekit-url.com",
+       "role": "guest",
+       "description": "Project updates and alignment",
+       "maxParticipants": 20,
+       "isMutedOnJoin": false,
+       "isCameraOffOnJoin": false,
+       "isApprovalRequired": true
      }
      ```
 
-### 3.3. Transcription Token
+* **`GET /api/rooms/{roomId}/metadata`** (Public - Guest pre-check)
+  * Returns the meeting details and guest restrictions prior to joining.
+  * Response (200 OK):
+     ```json
+     {
+       "roomId": "room-abc-123",
+       "roomName": "Weekly Sync",
+       "token": null,
+       "livekitUrl": "wss://your-livekit-url.com",
+       "role": null,
+       "description": "Project updates and alignment",
+       "maxParticipants": 20,
+       "isMutedOnJoin": false,
+       "isCameraOffOnJoin": false,
+       "isApprovalRequired": true
+     }
+     ```
+
+### 3.3. Waiting Room & Guest Approval Flow
+* **`POST /api/rooms/{roomId}/requests`** (Public - Guest Request Admission)
+  * Request Body:
+     ```json
+     {
+       "displayName": "Guest User"
+     }
+     ```
+  * Response (201 Created):
+     ```json
+     {
+       "id": "request-uuid-xyz",
+       "roomId": "room-abc-123",
+       "displayName": "Guest User",
+       "status": "PENDING",
+       "token": null
+     }
+     ```
+
+* **`GET /api/rooms/requests/{requestId}/status`** (Public - Guest Poll Admission Status)
+  * Response (200 OK):
+     ```json
+     {
+       "id": "request-uuid-xyz",
+       "roomId": "room-abc-123",
+       "displayName": "Guest User",
+       "status": "APPROVED",
+       "token": "livekit_participant_token_string..."
+     }
+     ```
+
+* **`GET /api/rooms/{roomId}/requests/pending`** (Protected - Host Retrieve Pending Approvals)
+  * Response (200 OK):
+     ```json
+     [
+       {
+         "id": "request-uuid-xyz",
+         "roomId": "room-abc-123",
+         "displayName": "Guest User",
+         "status": "PENDING",
+         "token": null
+       }
+     ]
+     ```
+
+* **`POST /api/rooms/requests/{requestId}/approve`** (Protected - Host Approve Guest Entry)
+  * Response (200 OK):
+     ```json
+     {
+       "message": "Request approved"
+     }
+     ```
+
+* **`POST /api/rooms/requests/{requestId}/deny`** (Protected - Host Deny Guest Entry)
+  * Response (200 OK):
+     ```json
+     {
+       "message": "Request denied"
+     }
+     ```
+
+### 3.4. Transcription Token
 * **`GET /api/transcription/token`** (Protected - Authenticated Room Participants)
   * Returns a short-lived ephemeral Deepgram token to prevent master key exposure in the frontend.
   * Response (200 OK):

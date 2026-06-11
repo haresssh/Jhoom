@@ -22,6 +22,7 @@ flowchart TD
 
 | Metric | Details / Actuals |
 | :--- | :--- |
+| **Public GitHub Repository** | [https://github.com/haresssh/Jhoom](https://github.com/haresssh/Jhoom) |
 | **Estimated Scoping Timeframe** | 16–20 Hours (Determined during specs scoping) |
 | **Actual Time Spent** | ~14 Hours (Scaffolding, WebRTC grid, LiveKit integration, Deepgram stream piping, local network/mobile optimizations, profiles refactoring) |
 
@@ -39,7 +40,37 @@ flowchart TD
 
 ---
 
-## 3. Local Development Guide
+## 3. User Interface Gallery
+
+### **Host Authentication**
+* **Create Account / Signup:**
+  ![Host Signup](docs/screenshots/01_signup.png)
+* **Log In / Welcome Back:**
+  ![Host Login](docs/screenshots/02_login.png)
+
+### **Host Dashboard & Room Configuration**
+* **Room Scheduler & Options Panel:** Set meeting topic, agenda description, maximum participant counts, and default guest audio/video/approval policies.
+  ![Host Dashboard Empty](docs/screenshots/03_dashboard_empty.png)
+* **Active Room Administration:** Manage ongoing meetings, copy direct URLs, or terminate active calls.
+  ![Host Dashboard Active](docs/screenshots/04_dashboard_active.png)
+
+### **Meeting Room Session**
+* **Responsive Video Grid & Controls:** Dynamic WebRTC participant tiles with integrated participants list, active host administration controllers (remote mute, kick/remove), and real-time transcription panel with speaker attribution and download logs.
+  ![Video Call Session](docs/screenshots/05_video_call.png)
+* **Screen Sharing Interface:** Share your screen or application window natively to all participants inside the dynamic grid layout.
+  ![Screen Sharing Session](docs/screenshots/06_screen_sharing.png)
+* **Leave/End Session Controls:** Clear host options to end the call for everyone or exit the room individually.
+  ![Leave or End Dialog](docs/screenshots/07_leave_or_end_modal.png)
+
+### **Post-Meeting Navigation**
+* **Guest Leave / Rejoin Screen:**
+  ![Left Meeting Screen](docs/screenshots/08_left_meeting.png)
+* **Host Ended Notification:**
+  ![Host Ended Screen](docs/screenshots/09_meeting_ended.png)
+
+---
+
+## 4. Local Development Guide
 
 ### **A. Database Setup**
 Spin up the PostgreSQL database container in the root directory:
@@ -76,7 +107,7 @@ docker-compose up -d
 
 ---
 
-## 4. Local Network & Mobile Device Testing
+## 5. Local Network & Mobile Device Testing
 
 Mobile browsers disable media permissions (`getUserMedia`) on insecure `http` connections unless accessed via `localhost`.
 
@@ -95,7 +126,7 @@ To test on a mobile phone easily over HTTPS without any certificate setups:
 
 ---
 
-## 5. AWS Production Deployment Guide
+## 6. AWS Production Deployment Guide
 
 We deploy the platform as a containerized unified application to **Amazon ECS Express Mode** (AWS Fargate) connected to a managed **Amazon RDS PostgreSQL** database:
 
